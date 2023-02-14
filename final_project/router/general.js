@@ -1,6 +1,6 @@
-const { response } = require('express');
 const express = require('express');
 const Books = require("../models/books.js");
+let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
@@ -25,16 +25,17 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/', (req, res) => {
-  return res.send(JSON.stringify(Books.getAll()));
+public_users.get('/', async (req, res) => {
+  const books = await AsyncBooks.getAll()
+  return res.send(JSON.stringify(books));
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn', (req, res) => {
+public_users.get('/isbn/:isbn', async (req, res) => {
   const isbn = req.params.isbn;
   let result = [];
 
-  const book = Books.getByISBN(isbn);
+  const book = await AsyncBooks.getByISBN(isbn)
   if (book)
     result.push(book)
 
@@ -42,11 +43,11 @@ public_users.get('/isbn/:isbn', (req, res) => {
 });
 
 // Get book details based on author
-public_users.get('/author/:author', (req, res) => {
+public_users.get('/author/:author', async (req, res) => {
   const author = req.params.author;
   let result = [];
 
-  const book = Books.find({author});
+  const book = await AsyncBooks.find({author});
   if (book)
     result.push(book)
 
@@ -54,11 +55,11 @@ public_users.get('/author/:author', (req, res) => {
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
+public_users.get('/title/:title', async function (req, res) {
   const title = req.params.title;
   let result = [];
 
-  const book = Books.find({title});
+  const book = await AsyncBooks.find({title});
   if (book)
     result.push(book)
 
@@ -66,12 +67,66 @@ public_users.get('/title/:title',function (req, res) {
 });
 
 //  Get book review
-public_users.get('/review/:isbn',function (req, res) {
+public_users.get('/review/:isbn', function (req, res) {
   const isbn = req.params.isbn;
   const book = Books.getByISBN(isbn);
 
   reviews = book?.reviews ? [book.reviews] : [];
   return res.send(reviews);
 });
+
+
+class AsyncBooks {
+  static getAll() {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(books)
+      }, 500);
+    });
+  }
+
+  static getByISBN(isbn) {
+    let book;
+    for (const key in books) {
+      if (key === isbn) {
+        book = [books[key]];
+        break;
+      }
+    }
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(book)
+      }, 500);
+    });
+  }
+
+  static find(filters) {
+    let book;
+    for (const key in books) {
+
+      let hasAllFilters = true;
+      for (const filter in filters){
+        if (books[key][filter] === filters[filter]) {
+          continue;
+        } else {
+          hasAllFilters = false;
+          break;
+        }
+      }
+
+      if (hasAllFilters) {
+        book = books[key];
+        break;
+      }
+    }
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(book)
+      }, 500);
+    });
+  }
+}
 
 module.exports.general = public_users;
